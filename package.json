@@ -1,0 +1,14 @@
+{
+  "name": "blog-draft-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "티스토리·네이버 블로그 초안 도구 — 붙여넣을 마크다운·대표이미지·화면 도식·본문 이미지. 발행은 하지 않는다.",
+  "type": "module",
+  "scripts": {
+    "setup": "npm install && npx playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  },
+  "license": "MIT"
+}
