@@ -78,15 +78,19 @@ for (const f of files) {
   const get = (k) => (fm[1].match(new RegExp(`^${k}:\\s*(.+)$`, 'm')) ?? [])[1]?.trim() ?? '';
 
   const ep = String(get('ep') || '00').padStart(2, '0');
+  // ★ 파일명에 발행일을 박는다 (2026-08-26). make-paste.mjs 가 같은 규칙으로 이 파일을 찾는다.
+  //   ⛔ 이미지 안의 `ep-NN.sh` 는 그대로 둔다 — 그건 터미널 제목이지 파일 이름이 아니다.
+  const pubDate = get('publishDate');
+  const stem = /^\d{4}-\d{2}-\d{2}$/.test(pubDate) ? `ep-${ep}-${pubDate}` : `ep-${ep}`;
   const title = get('title');
   const category = get('category') || '자동화 구축기';
   const [main, ...rest] = title.split(' — ');
   const sub = rest.join(' — ');
 
   await page.setContent(page$({ ep, main, sub, category }));
-  const file = path.join(OUT, `ep-${ep}.png`);
+  const file = path.join(OUT, `${stem}.png`);
   await page.screenshot({ path: file });
-  console.log(`  ep-${ep}.png  ${W}×${H}  주제목 ${main.length}자(${titleSize(main.length)}px)${sub ? ` · 부제목 ${sub.length}자` : ' · 부제목 없음'}`);
+  console.log(`  ${stem}.png  ${W}×${H}  주제목 ${main.length}자(${titleSize(main.length)}px)${sub ? ` · 부제목 ${sub.length}자` : ' · 부제목 없음'}`);
 }
 
 await browser.close();

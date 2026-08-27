@@ -103,7 +103,14 @@ for (const f of files) {
   // 항목이 체크리스트에 있어도 파일을 안 보면 못 잡는다.
   //
   // 없으면 티스토리 기본 로고가 나간다 (2026-08-10 EP.01 에서 확인).
-  const epSlug = f.replace(/^(ep-\d+).*$/, '$1');
+  // ★ 산출물 이름에 발행일을 박는다 (2026-08-26).
+  //   회차가 쌓이면 `ep-NN` 만으로는 어느 게 언제 나가는지 안 보인다.
+  //   붙여넣기 작업은 **날짜를 보고** 하기 때문에 여기가 헷갈리는 자리다.
+  //   ⛔ 원고 파일명이 아니라 프론트매터 publishDate 에서 가져온다 — 예약 날짜의 단일 출처가 거기다.
+  //      파일명에서 뽑으면 이름과 프론트매터가 갈릴 때 조용히 어긋난다.
+  const epNo = f.replace(/^(ep-\d+).*$/, '$1');
+  const pubDate = (m[1].match(/^publishDate:\s*(\d{4}-\d{2}-\d{2})\s*$/m) ?? [])[1];
+  const epSlug = pubDate ? `${epNo}-${pubDate}` : epNo;
   const thumbRel = path.join('out', 'thumb', `${epSlug}.png`);
   const hasThumb = await access(thumbRel).then(() => true, () => false);
   if (!hasThumb) thumbMissing.push(epSlug);
@@ -150,11 +157,11 @@ for (const f of files) {
     `-->\n\n` +
     `<!-- ===================== 여기부터 복사 ===================== -->\n\n`;
 
-  const outName = f.replace(/^(ep-\d+).*$/, '$1.md');
+  const outName = `${epSlug}.md`;
   await writeFile(path.join(OUT, outName), head + body);
 
   const plain = body.replace(/```[\s\S]*?```/g, '').replace(/[#*|`>\-]/g, '').replace(/\s+/g, '');
-  console.log(`  ${outName.padEnd(9)} ${plain.length.toLocaleString().padStart(6)}자 · 이미지 ${shots.length}장 · 대표이미지 ${hasThumb ? '있음' : '⛔ 없음'}${quoteCount ? ` · ⛔ 인용구 ${quoteCount}곳(스타일 바꿀 것)` : ''}`);
+  console.log(`  ${outName.padEnd(22)} ${plain.length.toLocaleString().padStart(6)}자 · 이미지 ${shots.length}장 · 대표이미지 ${hasThumb ? '있음' : '⛔ 없음'}${quoteCount ? ` · ⛔ 인용구 ${quoteCount}곳(스타일 바꿀 것)` : ''}`);
   shots.forEach((s,i)=>console.log(`      ${i+1}. ${s.file}  →  「${s.section}」`));
   console.log(`    제목: ${title}`);
 
