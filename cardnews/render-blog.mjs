@@ -117,8 +117,15 @@ const css = `
   .row .c3 { flex: 0 0 46px; text-align: center; font-size: 30px; color: var(--dim); }
   .row .c4 { flex: 1; text-align: right; font-size: 38px; font-weight: 800; color: var(--accent); }
   .row.same .c4 { color: var(--text); }
+  /* ★ 2026-09-07 신설: compare 는 「바뀐 값」을 무조건 초록으로 칠했다.
+     그런데 오른 값도 초록이면 좋은 쪽으로 읽힌다 — 요금 카드에서 실제로 그랬다
+     (캐시 리드 절반과 입력·출력 두 배가 같은 초록). 색이 뜻과 어긋나는 자리다.
+     ⛔ 자기검사는 잘림만 본다 — 색은 못 본다고 스스로 적어두고 있다.
+     ▶ 스펙에서 worse:true 를 주면 빨강으로 칠한다. 안 주면 기존 그대로다. */
+  .row.worse .c4 { color: var(--danger); }
   .row .tag { flex: 0 0 92px; text-align: right; font-size: 24px; color: var(--dim); }
   .row.same .tag { color: var(--accent); }
+  .row.worse .tag { color: var(--danger); }
   .note { margin-top: 26px; font-size: 26px; line-height: 1.5; color: var(--dim); }
 
   /* --- quote: 1차 원문 인용 ---
@@ -186,7 +193,7 @@ function renderCard(c, i) {
       <h2>${ml(c.heading)}</h2>
       <div class="rows mono">
         ${c.rows.map((r) => `
-          <div class="row ${r.same ? 'same' : ''}">
+          <div class="row ${r.same ? 'same' : ''} ${r.worse ? 'worse' : ''}">
             <span class="c1">${esc(r.label)}</span>
             <span class="c2">${esc(r.now)}</span>
             <span class="c3">→</span>

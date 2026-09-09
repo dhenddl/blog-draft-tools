@@ -24,7 +24,12 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 // 주제목 길이에 따라 폰트를 줄인다 — 넘치면 잘리는 게 아니라 작아지게
 const titleSize = (n) => (n <= 20 ? 66 : n <= 30 ? 56 : n <= 40 ? 48 : 42);
 
-const page$ = ({ ep, main, sub, category }) => `<!doctype html><meta charset="utf-8">
+// ★ 2026-09-02: 상단 바 제목과 kicker 를 **인자로 받는다.**
+//   연재 회차는 `ep-NN.sh` · `$ EP.NN · 카테고리` 로 그대로 넘기고,
+//   공지처럼 회차 번호가 없는 글은 다른 라벨을 넘긴다.
+//   ⛔ 별도 스크립트를 만들지 않았다 — 이 파일 머리말이 경고한 그 함정이다
+//     (*"사람이 복사하면 갈라지고 스크립트가 복사하면 안 갈라진다"*). 팔레트는 한 곳에 둔다.
+const page$ = ({ barTitle, kicker, main, sub }) => `<!doctype html><meta charset="utf-8">
 <style>
   :root{--bg:#0d1117;--panel:#161b22;--line:#30363d;--text:#e6edf3;--dim:#9aa4b2;--accent:#3fb950;}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -53,23 +58,52 @@ const page$ = ({ ep, main, sub, category }) => `<!doctype html><meta charset="ut
   <span class="dot" style="background:#ff5f56"></span>
   <span class="dot" style="background:#ffbd2e"></span>
   <span class="dot" style="background:#27c93f"></span>
-  <span class="bartitle mono">ep-${ep}.sh — 무인 수익 실험</span>
+  <span class="bartitle mono">${esc(barTitle)} — 무인 수익 실험</span>
 </div>
 <div class="main">
-  <div class="kicker mono">$ EP.${ep} · ${esc(category)}</div>
+  <div class="kicker mono">${esc(kicker)}</div>
   <h1>${esc(main)}</h1>
   ${sub ? `<div class="sub">${esc(sub)}</div>` : ''}
   <div class="rule"></div>
 </div>
 <div class="foot mono"><span>dhenddl1.tistory.com</span><span class="r">@dhenddl1</span></div>`;
 
-const filter = process.argv[2];
-const files = (await readdir(SRC)).filter((f) => f.endsWith('.md')).filter((f) => !filter || f.startsWith(filter));
-if (!files.length) { console.error('대상 없음'); process.exit(1); }
+// ── 공지용 경로 (2026-09-02 신설) ──────────────────────────────
+//   사용: node make-thumb.mjs --notice notice/notice-tistory.md
+//   공지는 회차 번호가 없어서 `ep`·`publishDate` 규칙을 못 쓴다.
+//   ⛔ 그렇다고 posts/ 에 가짜 ep 를 넣지 않는다 — 연재 번호가 오염된다.
+//   출력 이름은 원고 파일명을 그대로 쓴다(`notice-tistory.png`).
+const argv = process.argv.slice(2);
+const noticeIdx = argv.indexOf('--notice');
+const noticePath = noticeIdx >= 0 ? argv[noticeIdx + 1] : '';
+
+const filter = noticePath ? '' : argv[0];
+const files = noticePath
+  ? []
+  : (await readdir(SRC)).filter((f) => f.endsWith('.md')).filter((f) => !filter || f.startsWith(filter));
+if (!noticePath && !files.length) { console.error('대상 없음'); process.exit(1); }
 
 await mkdir(OUT, { recursive: true });
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+
+if (noticePath) {
+  const raw = await readFile(noticePath, 'utf8');
+  const fm = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!fm) { console.error(`⚠️ ${noticePath} — frontmatter 없음`); process.exit(1); }
+  const get = (k) => (fm[1].match(new RegExp(`^${k}:\\s*(.+)$`, 'm')) ?? [])[1]?.trim() ?? '';
+  const title = get('title');
+  if (!title) { console.error('⚠️ title 이 없다'); process.exit(1); }
+  const [main, ...rest] = title.split(' — ');
+  const sub = rest.join(' — ');
+  const stem = path.basename(noticePath, '.md');
+  await page.setContent(page$({ barTitle: 'notice.sh', kicker: '$ 공지 · 자료 받는 곳', main, sub }));
+  const out = path.join(OUT, `${stem}.png`);
+  await page.screenshot({ path: out });
+  console.log(`  ${stem}.png  ${W}×${H}  주제목 ${main.length}자(${titleSize(main.length)}px)${sub ? ` · 부제목 ${sub.length}자` : ' · 부제목 없음'}`);
+  await browser.close();
+  process.exit(0);
+}
 
 for (const f of files) {
   const raw = await readFile(path.join(SRC, f), 'utf8');
@@ -87,7 +121,12 @@ for (const f of files) {
   const [main, ...rest] = title.split(' — ');
   const sub = rest.join(' — ');
 
-  await page.setContent(page$({ ep, main, sub, category }));
+  await page.setContent(page$({
+    barTitle: `ep-${ep}.sh`,
+    kicker: `$ EP.${ep} · ${category}`,
+    main,
+    sub,
+  }));
   const file = path.join(OUT, `${stem}.png`);
   await page.screenshot({ path: file });
   console.log(`  ${stem}.png  ${W}×${H}  주제목 ${main.length}자(${titleSize(main.length)}px)${sub ? ` · 부제목 ${sub.length}자` : ' · 부제목 없음'}`);
