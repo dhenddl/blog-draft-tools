@@ -94,4 +94,6 @@ node render-blog.mjs path/to/spec.json
 AI 자동화 실측을 공개하는 계정에서 나왔습니다 — [@dhenddl1](https://www.instagram.com/dhenddl1)
 인스타그램·스레드 무인 발행 쪽은 따로 있습니다: [instagram-threads-autopublish](https://github.com/dhenddl/instagram-threads-autopublish)
 
+이 도구들을 만든 과정은 블로그에 회차별로 있습니다 — **[티스토리 구축기](https://dhenddl1.tistory.com)** · **[네이버 블로그](https://blog.naver.com/dhenddl1)**
+
 MIT.

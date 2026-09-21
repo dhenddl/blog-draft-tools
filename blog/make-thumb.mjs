@@ -58,7 +58,7 @@ const page$ = ({ barTitle, kicker, main, sub }) => `<!doctype html><meta charset
   <span class="dot" style="background:#ff5f56"></span>
   <span class="dot" style="background:#ffbd2e"></span>
   <span class="dot" style="background:#27c93f"></span>
-  <span class="bartitle mono">${esc(barTitle)} — 무인 수익 실험</span>
+  <span class="bartitle mono">${esc(barTitle)} — AI 자동화 · 개발자 부업</span>
 </div>
 <div class="main">
   <div class="kicker mono">${esc(kicker)}</div>

@@ -45,7 +45,7 @@ const card = (p) => `
     ${p.note ? `<div class="note">${esc(p.note)}</div>` : ''}
     ${p.확인필요 ? `<div class="warn">⚠️ 이 경로의 중간 단계는 미확인 — 화면에서 직접 확인 후 확정할 것</div>` : ''}
   </div>
-  <div class="foot mono">무인 수익 실험 · dhenddl1.tistory.com</div>
+  <div class="foot mono">AI 자동화 · 개발자 부업 · dhenddl1.tistory.com</div>
 </div>`;
 
 const page$ = (p) => `<!doctype html><meta charset="utf-8">
