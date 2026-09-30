@@ -77,15 +77,41 @@ const argv = process.argv.slice(2);
 const noticeIdx = argv.indexOf('--notice');
 const noticePath = noticeIdx >= 0 ? argv[noticeIdx + 1] : '';
 
-const filter = noticePath ? '' : argv[0];
-const files = noticePath
+// ── 필수 페이지용 경로 (2026-09-21 신설) ─────────────────────────────────
+//   사용: node make-thumb.mjs --pages
+//   소개·문의·개인정보처리방침은 **본문에 이미지가 하나도 없다.** 그러면 티스토리가
+//   대표이미지를 못 고르고 **기본 로고**가 뜬다 — 이 파일 머리말이 EP.01 에서 확인한 그 문제다.
+//   ⛔ 별도 스크립트를 만들지 않았다. 머리말 경고 그대로다 —
+//     *"사람이 복사하면 갈라지고 스크립트가 복사하면 안 갈라진다. 팔레트는 한 곳에 둔다."*
+//   ⛔ 문구를 여기 박지 않는다 — `pages/thumbs.json` 이 단일 출처다. 이 파일은 그걸 읽기만 한다.
+const PAGES = argv.includes('--pages');
+
+const filter = (noticePath || PAGES) ? '' : argv[0];
+const files = (noticePath || PAGES)
   ? []
   : (await readdir(SRC)).filter((f) => f.endsWith('.md')).filter((f) => !filter || f.startsWith(filter));
-if (!noticePath && !files.length) { console.error('대상 없음'); process.exit(1); }
+if (!noticePath && !PAGES && !files.length) { console.error('대상 없음'); process.exit(1); }
 
 await mkdir(OUT, { recursive: true });
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+
+if (PAGES) {
+  const spec = JSON.parse(await readFile(path.join('pages', 'thumbs.json'), 'utf8'));
+  const 목록 = spec.pages ?? [];
+  if (!목록.length) { console.error('⚠️ pages/thumbs.json 에 pages 가 비어 있다'); process.exit(1); }
+  for (const p of 목록) {
+    for (const k of ['key', 'barTitle', 'kicker', 'main']) {
+      if (!p[k]) { console.error(`⚠️ ${p.key ?? '(key 없음)'} — ${k} 가 비어 있다`); process.exit(1); }
+    }
+    await page.setContent(page$({ barTitle: p.barTitle, kicker: p.kicker, main: p.main, sub: p.sub ?? '' }));
+    const out = path.join(OUT, `page-${p.key}.png`);
+    await page.screenshot({ path: out });
+    console.log(`  page-${p.key}.png  ${W}×${H}  주제목 ${p.main.length}자(${titleSize(p.main.length)}px)${p.sub ? ` · 부제목 ${p.sub.length}자` : ''}`);
+  }
+  await browser.close();
+  process.exit(0);
+}
 
 if (noticePath) {
   const raw = await readFile(noticePath, 'utf8');
